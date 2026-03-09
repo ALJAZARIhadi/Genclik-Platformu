@@ -4,10 +4,29 @@ function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    console.log("Giriş yapılıyor:", email);
-    // هنا لاحقاً سنربط مع الـ Controller في الـ Backend
+    
+    try {
+      // إرسال البيانات للسيرفر (البحث عن الـ Controller)
+      const response = await fetch('http://localhost:5000/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        alert("🎉 " + data.message); // Giriş Başarılı!
+        console.log("Kullanıcı bilgisi:", data.user);
+      } else {
+        alert("❌ " + data.message); // Hatalı giriş
+      }
+    } catch (error) {
+      console.error("Bağlantı hatası:", error);
+      alert("Sunucuya bağlanılamadı!");
+    }
   };
 
   return (

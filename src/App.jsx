@@ -1,12 +1,13 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Login from './pages/Login';
+import Dashboard from './pages/Dashboard'; // استيراد الصفحة الجديدة
 
 function App() {
   return (
     <Router>
       <Routes>
         <Route path="/" element={<Login />} />
-        {/* سنضيف لاحقاً باقي الصفحات هنا */}
+        <Route path="/dashboard" element={<Dashboard />} /> {/* مسار الصفحة الجديدة */}
       </Routes>
     </Router>
   );

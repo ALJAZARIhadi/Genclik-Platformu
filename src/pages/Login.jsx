@@ -23,7 +23,8 @@ function Login() {
       if (response.ok) {
         localStorage.setItem('userRole', data.role);
         localStorage.setItem('userName', data.user);
-        navigate('/dashboard');
+        localStorage.setItem('userId', data.userId);
+        navigate('/dashboard'); // الانتقال إلى لوحة التحكم بعد تسجيل الدخول الناجح
       } else {
         // إذا كان هناك خطأ (مثل كلمة مرور خاطئة)، نظهره في الشاشة
         setErrorMsg(data.message || 'Giriş başarısız!');

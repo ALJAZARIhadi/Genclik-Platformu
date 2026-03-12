@@ -77,7 +77,7 @@ function QuranTracker() {
   return (
     <div style={styles.container}>
       <div style={styles.header}>
-        <button onClick={() => navigate('/dashboard')} style={styles.backBtn}>⬅ Geri Dön</button>
+        <button onClick={() => navigate('/menu')} style={styles.backBtn}>⬅ Geri Dön</button>
         <h2 style={{ margin: 0 }}>📖 Kur'an-ı Kerim Takibi</h2>
       </div>
 

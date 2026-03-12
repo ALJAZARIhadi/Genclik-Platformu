@@ -56,7 +56,7 @@ function Scholars() {
   return (
     <div style={styles.container}>
       <div style={styles.header}>
-        <button onClick={() => navigate('/dashboard')} style={styles.backBtn}>⬅ Geri Dön</button>
+        <button onClick={() => navigate('/menu')} style={styles.backBtn}>⬅ Geri Dön</button>
         <h2 style={{ margin: 0, color: '#2c3e50' }}>📚 İslam Alimleri ve Öncüleri</h2>
       </div>
 

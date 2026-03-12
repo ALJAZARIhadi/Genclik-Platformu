@@ -75,7 +75,7 @@ function SportsTracker() {
   return (
     <div style={styles.container}>
       <div style={styles.header}>
-        <button onClick={() => navigate('/dashboard')} style={styles.backBtn}>⬅ Geri Dön</button>
+        <button onClick={() => navigate('/menu')} style={styles.backBtn}>⬅ Geri Dön</button>
         <h2 style={{ margin: 0, color: '#2c3e50' }}>🏃‍♂️ Günlük Spor Takibi</h2>
       </div>
 

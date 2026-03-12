@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 
-function Dashboard() {
+function MainMenu() {
   const navigate = useNavigate();
   // جلب اسم المستخدم من الذاكرة
   const userName = localStorage.getItem('userName') || 'Öğrenci'; 
@@ -70,4 +70,4 @@ const styles = {
   desc: { color: '#7f8c8d', fontSize: '13px', margin: 0, lineHeight: '1.5' }
 };
 
-export default Dashboard;
+export default MainMenu;

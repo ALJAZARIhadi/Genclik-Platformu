@@ -8,6 +8,7 @@ import ScholarDetails from './pages/ScholarDetails'; // استيراد صفحة 
 import Scholars from './pages/Scholars'; // استيراد صفحة قائمة العلماء
 import AcademicTracker from './pages/AcademicTracker';
 import Navbar from './pages/Navbar';
+import Footer from './pages/Footer';
 
 function App() {
   return (
@@ -23,6 +24,7 @@ function App() {
         <Route path="/scholar/:id" element={<ScholarDetails />} />
         <Route path="/academic-tracker" element={<AcademicTracker />} />
       </Routes>
+      <Footer />
     </Router>
   );
 }

@@ -7,10 +7,12 @@ import SportsTracker from './Frontend/SportsTracker'; // استيراد صفحة
 import ScholarDetails from './pages/ScholarDetails'; // استيراد صفحة تفاصيل العلماء
 import Scholars from './pages/Scholars'; // استيراد صفحة قائمة العلماء
 import AcademicTracker from './pages/AcademicTracker';
+import Navbar from './pages/Navbar';
 
 function App() {
   return (
     <Router>
+      <Navbar />
       <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/menu" element={<MainMenu />} /> {/* مسار الصفحة الجديدة */}

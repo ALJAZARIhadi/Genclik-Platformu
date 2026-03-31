@@ -3,71 +3,125 @@ import { useNavigate } from 'react-router-dom';
 
 function MainMenu() {
   const navigate = useNavigate();
-  // جلب اسم المستخدم من الذاكرة
-  const userName = localStorage.getItem('userName') || 'Öğrenci'; 
-
-  // دالة تسجيل الخروج
-  const handleLogout = () => {
-    localStorage.clear(); // مسح بيانات الدخول
-    navigate('/'); // العودة لصفحة تسجيل الدخول
-  };
 
   return (
     <div style={styles.container}>
       <div style={styles.header}>
-        <div>
-          <h2 style={{ margin: 0, color: '#2c3e50' }}>Hoş Geldin, {userName}! 👋</h2>
-          <p style={{ margin: '5px 0 0 0', color: '#7f8c8d' }}>Bugün kendini geliştirmek için ne yapmak istersin?</p>
-        </div>
-        <button onClick={handleLogout} style={styles.logoutBtn}>Çıkış Yap</button>
+        <h2 style={styles.title}>Miras Platformu 🌟</h2>
+        <p style={styles.subtitle}>Bugün hangi alanda kendini geliştirmek istersin?</p>
       </div>
 
-      <div style={styles.menuGrid}>
-        
-        {/* 1. قسم القرآن الكريم */}
-        <div style={styles.card} onClick={() => navigate('/quran-tracker')}>
-          <div style={styles.iconBgQuran}>📖</div>
+      <div style={styles.grid}>
+        {/* القسم الأول: القرآن الكريم */}
+        <div 
+          className="hover-card" 
+          style={{ ...styles.card, borderTop: '5px solid #2ecc71' }} 
+          onClick={() => navigate('/quran-tracker')}
+        >
+          <div style={{ ...styles.iconBox, backgroundColor: '#eafaf1', color: '#27ae60' }}>📖</div>
           <h3 style={styles.cardTitle}>Kur'an-ı Kerim</h3>
-          <p style={styles.desc}>Ezber ve tekrar durumunu takip et, kalbini nurlandır.</p>
+          <p style={styles.cardDesc}>Günlük okuma ve ezber takibi.</p>
         </div>
 
-        {/* 2. قسم الرياضة (الجديد) 🏃‍♂️ */}
-        <div style={styles.card} onClick={() => navigate('/sports-tracker')}>
-          <div style={styles.iconBgSports}>🏋️‍♂️</div>
-          <h3 style={styles.cardTitle}>Spor & Hareket</h3>
-          <p style={styles.desc}>Sağlam kafa sağlam vücutta bulunur. Günlük hedeflerini tamamla!</p>
+        {/* القسم الثاني: الرياضة */}
+        <div 
+          className="hover-card" 
+          style={{ ...styles.card, borderTop: '5px solid #e74c3c' }} 
+          onClick={() => navigate('/sports-tracker')}
+        >
+          <div style={{ ...styles.iconBox, backgroundColor: '#fdedec', color: '#c0392b' }}>🏋️‍♂️</div>
+          <h3 style={styles.cardTitle}>Spor ve Sağlık</h3>
+          <p style={styles.cardDesc}>Fiziksel aktivitelerini kaydet.</p>
         </div>
 
-        {/* 3. قسم السيرة (كمثال للأقسام القادمة) */}
-        <div style={{ ...styles.card, opacity: 0.6, cursor: 'not-allowed' }}>
-          <div style={styles.iconBgDisabled}>🕌</div>
-          <h3 style={styles.cardTitle}>Siyer (Yakında)</h3>
-          <p style={styles.desc}>Peygamberimizin hayatı ve ahlakı.</p>
+        {/* القسم الثالث: العلماء */}
+        <div 
+          className="hover-card" 
+          style={{ ...styles.card, borderTop: '5px solid #9b59b6' }} 
+          onClick={() => navigate('/scholars')}
+        >
+          <div style={{ ...styles.iconBox, backgroundColor: '#f5eef8', color: '#8e44ad' }}>🧠</div>
+          <h3 style={styles.cardTitle}>Alimlerimiz</h3>
+          <p style={styles.cardDesc}>İslam alimlerinin ilham verici hayatları.</p>
         </div>
 
-        {/* 4. قسم العلماء (الجديد) 💡 */}
-        <div style={styles.card} onClick={() => navigate('/scholars')}>
-          <div style={{...styles.iconBgSports, backgroundColor: '#fef5e7'}}>🧠</div>
-          <h3 style={styles.cardTitle}>İslam Alimleri</h3>
-          <p style={styles.desc}>Tarihimize yön veren bilim öncülerini yakından tanı.</p>
+        {/* القسم الرابع: التقويم الأكاديمي */}
+        <div 
+          className="hover-card" 
+          style={{ ...styles.card, borderTop: '5px solid #3498db' }} 
+          onClick={() => navigate('/academic-tracker')}
+        >
+          <div style={{ ...styles.iconBox, backgroundColor: '#ebf5fb', color: '#2980b9' }}>🎓</div>
+          <h3 style={styles.cardTitle}>Akademik Koç</h3>
+          <p style={styles.cardDesc}>Sınavlarını, ödevlerini ve zamanını yönet.</p>
         </div>
-
       </div>
     </div>
   );
 }
 
 const styles = {
-  container: { padding: '30px', maxWidth: '900px', margin: 'auto', fontFamily: '"Segoe UI", Tahoma, Geneva, Verdana, sans-serif' },
-  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fff', padding: '25px', borderRadius: '15px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', marginBottom: '30px' },
-  logoutBtn: { backgroundColor: '#ff4d4d', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', transition: '0.3s' },
-  menuGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '25px' },
-  card: { backgroundColor: '#fff', padding: '30px 20px', borderRadius: '15px', textAlign: 'center', cursor: 'pointer', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', transition: 'transform 0.2s, box-shadow 0.2s', border: '1px solid #f0f0f0' },
-  cardTitle: { color: '#2c3e50', marginBottom: '10px', fontSize: '18px' },
-  iconBgQuran: { fontSize: '45px', backgroundColor: '#e8f8f5', width: '80px', height: '80px', display: 'flex', justifyContent: 'center', alignItems: 'center', borderRadius: '50%', margin: '0 auto 15px auto' },
-  iconBgSports: { fontSize: '45px', backgroundColor: '#ebf5fb', width: '80px', height: '80px', display: 'flex', justifyContent: 'center', alignItems: 'center', borderRadius: '50%', margin: '0 auto 15px auto' },
-  iconBgDisabled: { fontSize: '45px', backgroundColor: '#f4f6f6', width: '80px', height: '80px', display: 'flex', justifyContent: 'center', alignItems: 'center', borderRadius: '50%', margin: '0 auto 15px auto', filter: 'grayscale(100%)' },
-  desc: { color: '#7f8c8d', fontSize: '13px', margin: 0, lineHeight: '1.5' }
+  container: {
+    padding: '40px 20px',
+    maxWidth: '900px',
+    margin: '0 auto',
+    textAlign: 'center'
+  },
+  header: {
+    marginBottom: '40px'
+  },
+  title: {
+    fontSize: '32px',
+    color: 'var(--text-main)', // متصل بالوضع الليلي
+    marginBottom: '10px',
+    transition: 'color 0.3s ease'
+  },
+  subtitle: {
+    fontSize: '18px',
+    color: 'var(--text-sub)', // متصل بالوضع الليلي
+    transition: 'color 0.3s ease'
+  },
+  grid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(2, 1fr)', // تقسيم الشاشة لمربعين (2x2)
+    gap: '25px',
+  },
+  card: {
+    backgroundColor: 'var(--card-bg)', // متصل بالوضع الليلي
+    padding: '30px',
+    borderRadius: '15px',
+    boxShadow: '0 8px 20px var(--shadow)', // متصل بالوضع الليلي
+    cursor: 'pointer',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: '200px',
+    transition: 'background-color 0.3s ease, border 0.3s ease'
+  },
+  iconBox: {
+    width: '70px',
+    height: '70px',
+    borderRadius: '50%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: '35px',
+    marginBottom: '15px'
+  },
+  cardTitle: {
+    margin: '0 0 10px 0',
+    color: 'var(--text-main)', // متصل بالوضع الليلي
+    fontSize: '22px',
+    fontWeight: 'bold',
+    transition: 'color 0.3s ease'
+  },
+  cardDesc: {
+    margin: '0',
+    color: 'var(--text-sub)', // متصل بالوضع الليلي
+    fontSize: '15px',
+    transition: 'color 0.3s ease'
+  }
 };
 
 export default MainMenu;

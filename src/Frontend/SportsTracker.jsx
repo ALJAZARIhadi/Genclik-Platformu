@@ -34,12 +34,15 @@ function SportsTracker() {
             });
             setExercises(updatedExercises);
           }
-          setLoading(false);
+          setLoading(false); // إيقاف التحميل بعد نجاح الجلب
         })
         .catch(err => {
           console.error("خطأ في جلب بيانات الرياضة:", err);
-          setLoading(false);
+          setLoading(false); // إيقاف التحميل حتى لو حدث خطأ
         });
+    } else {
+      // 🚀 السطر السحري: إذا لم يكن هناك مستخدم مسجل، أوقف التحميل فوراً!
+      setLoading(false);
     }
   }, [userId, today]);
 

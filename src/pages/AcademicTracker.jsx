@@ -1,9 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 function AcademicTracker() {
   const navigate = useNavigate();
   const userId = localStorage.getItem('userId');
+
+  // مرجع (Ref) لليوم الحالي عشان نعمل Scroll تلقائي له
+  const todayRef = useRef(null);
 
   // --- حالات المهام ---
   const [tasks, setTasks] = useState([]);
@@ -13,12 +16,28 @@ function AcademicTracker() {
   const [timeLeft, setTimeLeft] = useState(25 * 60); // 25 دقيقة
   const [isActive, setIsActive] = useState(false);
   const [isBreak, setIsBreak] = useState(false);
- 
+
   // --- حالات الجدول الأسبوعي ---
   const [schedule, setSchedule] = useState([]);
   const [newDers, setNewDers] = useState({ subject: '', day: 'Pazartesi', start: '', end: '', room: '' });
+  
+  // حالة لإظهار أو إخفاء فورم إضافة الجدول
+  const [showScheduleForm, setShowScheduleForm] = useState(false);
 
-const days = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"];
+  const days = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"];
+  const daysMapping = ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"];
+  const todayIndex = new Date().getDay();
+  const todayName = daysMapping[todayIndex];
+
+  // التمرير التلقائي لليوم الحالي
+  useEffect(() => {
+    if (todayRef.current) {
+      // بعد تحميل الجدول بمدة قصيرة، نقوم بتمرير الشاشة لليوم الحالي
+      setTimeout(() => {
+        todayRef.current.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+      }, 300);
+    }
+  }, [schedule]);
 
   // جلب المهام عند تحميل الصفحة
   const fetchTasks = () => {
@@ -26,7 +45,7 @@ const days = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartes
       fetch(`http://localhost:5000/api/auth/get-tasks/${userId}`)
         .then(res => res.json())
         .then(data => setTasks(data))
-        .catch(err => console.error(err));
+        .catch(err => console.error("Görevleri getirme hatası:", err));
     }
   };
 
@@ -66,17 +85,36 @@ const days = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartes
     return `⚠️ Süresi geçti`;
   };
 
-  // إضافة مهمة جديدة
+  // إضافة مهمة جديدة (تم تحسين الكود لمعرفة سبب الخطأ)
   const addTask = (e) => {
     e.preventDefault();
     if (!newTask.title) return;
+    
     fetch('http://localhost:5000/api/auth/add-task', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId, title: newTask.title, taskType: newTask.type, dueDate: newTask.date || null, priority: newTask.priority })
-    }).then(() => {
+      body: JSON.stringify({ 
+        userId, 
+        title: newTask.title, 
+        taskType: newTask.type, 
+        dueDate: newTask.date || null, 
+        priority: newTask.priority 
+      })
+    })
+    .then(async (res) => {
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || errorData.message || 'Sunucu hatası (خطأ في السيرفر)');
+      }
+      return res.json();
+    })
+    .then(() => {
       fetchTasks();
       setNewTask({ title: '', type: 'study', date: '', priority: 'normal' });
+    })
+    .catch(err => {
+      console.error("Görev eklerken hata oluştu:", err);
+      alert("Hata: " + err.message + "\nالرجاء تصوير هذا الخطأ وإرساله لحله!");
     });
   };
 
@@ -95,112 +133,116 @@ const days = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartes
       .then(() => fetchTasks());
   };
 
-    // دالة جلب الجدول
-    const fetchSchedule = () => {
-        fetch(`http://localhost:5000/api/auth/get-schedule/${userId}`)
-            .then(res => res.json())
-            .then(data => setSchedule(data));
-    };
+  // دالة جلب الجدول
+  const fetchSchedule = () => {
+    fetch(`http://localhost:5000/api/auth/get-schedule/${userId}`)
+      .then(res => res.json())
+      .then(data => setSchedule(data))
+      .catch(err => console.error("Programı getirme hatası:", err));
+  };
 
-    useEffect(() => { fetchSchedule(); }, [userId]);
+  useEffect(() => { fetchSchedule(); }, [userId]);
 
-    const addDers = (e) => {
-        e.preventDefault();
-        fetch('http://localhost:5000/api/auth/add-schedule', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId, ...newDers })
-        }).then(() => {
-            fetchSchedule();
-            setNewDers({ subject: '', day: 'Pazartesi', start: '', end: '', room: '' });
-        });
-    };
+  const addDers = (e) => {
+    e.preventDefault();
+    fetch('http://localhost:5000/api/auth/add-schedule', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, ...newDers })
+    }).then(() => {
+      fetchSchedule();
+      setNewDers({ subject: '', day: 'Pazartesi', start: '', end: '', room: '' });
+      setShowScheduleForm(false); // إغلاق الفورم بعد الإضافة بنجاح
+    });
+  };
 
-    const deleteDers = (id) => {
-        fetch(`http://localhost:5000/api/auth/delete-schedule/${id}`, { method: 'DELETE' })
-            .then(() => fetchSchedule());
-    };
-
-    const getCurrentDayTurkish = () => {
-  const days = ["Pazar", "Pazartesi", "Salı", "Çارşamba", "Perşembe", "Cuma", "Cumartesi"];
-  return days[new Date().getDay()];
-};
+  const deleteDers = (id) => {
+    fetch(`http://localhost:5000/api/auth/delete-schedule/${id}`, { method: 'DELETE' })
+      .then(() => fetchSchedule());
+  };
 
   return (
-    
     <div style={styles.container}>
       <div style={styles.header}>
         <button onClick={() => navigate('/menu')} style={styles.backBtn}>⬅ Geri Dön</button>
         <h2 style={{ margin: 0, color: '#2c3e50' }}>🎓 Akademik Koç</h2>
       </div>
 
-      {/* قسم إدخال الجدول الأسبوعي بتصميم محسّن */}
-        <div style={styles.card}>
-            <h3 style={{ borderBottom: '2px solid #27ae60', paddingBottom: '10px' }}>🗓️ Haftalık Program Oluştur</h3>
-            <form onSubmit={addDers} style={styles.formGrid}>
-                <input type="text" placeholder="Ders Adı" value={newDers.subject} onChange={e => setNewDers({...newDers, subject: e.target.value})} style={styles.input} required />
-                <input type="text" placeholder="Derslik / Oda (Örn: A-101)" value={newDers.room} onChange={e => setNewDers({...newDers, room: e.target.value})} style={styles.input} />
-                
-                <select value={newDers.day} onChange={e => setNewDers({...newDers, day: e.target.value})} style={styles.input}>
-                    {days.map(d => <option key={d} value={d}>{d}</option>)}
-                </select>
-
-                <div style={{ display: 'flex', gap: '5px' }}>
-                    <input type="time" title="Başlangıç" value={newDers.start} onChange={e => setNewDers({...newDers, start: e.target.value})} style={styles.input} required />
-                    <input type="time" title="Bitiş" value={newDers.end} onChange={e => setNewDers({...newDers, end: e.target.value})} style={styles.input} required />
-                </div>
-                
-                <button type="submit" style={styles.addDersBtn}>Programa Ekle</button>
-            </form>
+      {/* قسم إدخال الجدول الأسبوعي مع زر الإظهار/الإخفاء */}
+      <div style={styles.card}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: showScheduleForm ? '2px solid #27ae60' : 'none', paddingBottom: showScheduleForm ? '10px' : '0' }}>
+          <h3 style={{ margin: 0 }}>🗓️ Haftalık Program</h3>
+          <button 
+            onClick={() => setShowScheduleForm(!showScheduleForm)} 
+            style={{...styles.btn, backgroundColor: showScheduleForm ? '#e74c3c' : '#27ae60', padding: '8px 12px', fontSize: '12px'}}>
+            {showScheduleForm ? 'İptal ❌' : 'Program Düzenle ⚙️'}
+          </button>
         </div>
+        
+        {showScheduleForm && (
+          <form onSubmit={addDers} style={{...styles.formGrid, marginTop: '15px'}}>
+            <input type="text" placeholder="Ders Adı" value={newDers.subject} onChange={e => setNewDers({...newDers, subject: e.target.value})} style={styles.input} required />
+            <input type="text" placeholder="Derslik / Oda (Örn: A-101)" value={newDers.room} onChange={e => setNewDers({...newDers, room: e.target.value})} style={styles.input} />
+            
+            <select value={newDers.day} onChange={e => setNewDers({...newDers, day: e.target.value})} style={styles.input}>
+              {days.map(d => <option key={d} value={d}>{d}</option>)}
+            </select>
 
-        {/* عرض الجدول بطريقة ذكية */}
-    {/* عرض الجدول بتصميم الـ Grid الحديث */}
-       {/* عرض الجدول بتصميم الـ Grid الحديث مع تمييز اليوم وغداً */}
-    <div style={styles.scheduleGrid}>
+            <div style={{ display: 'flex', gap: '5px' }}>
+              <input type="time" title="Başlangıç" value={newDers.start} onChange={e => setNewDers({...newDers, start: e.target.value})} style={styles.input} required />
+              <input type="time" title="Bitiş" value={newDers.end} onChange={e => setNewDers({...newDers, end: e.target.value})} style={styles.input} required />
+            </div>
+            
+            <button type="submit" style={styles.addDersBtn}>Programa Ekle</button>
+          </form>
+        )}
+      </div>
+
+      {/* عرض الجدول بطريقة ذكية مع التركيز على اليوم */}
+      <div style={styles.scheduleGrid}>
         {days.map(day => {
-            const todayIndex = new Date().getDay(); // 0 لـ الأحد، 1 لـ الاثنين...
-            const daysMapping = ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"];
-            
-            const isToday = daysMapping[todayIndex] === day;
-            
-            // حساب يوم غد
-            const tomorrowIndex = (todayIndex + 1) % 7;
-            const isTomorrow = daysMapping[tomorrowIndex] === day;
+          const isToday = todayName === day;
+          
+          // حساب يوم غد
+          const tomorrowIndex = (todayIndex + 1) % 7;
+          const isTomorrow = daysMapping[tomorrowIndex] === day;
 
-            return (
-                <div key={day} style={{ 
-                    ...styles.dayCol, 
-                    backgroundColor: isToday ? '#fafff9' : isTomorrow ? '#fffcf0' : '#fff',
-                    border: isToday ? '2px solid #27ae60' : '1px solid #eee'
-                }}>
-                    <div style={{ 
-                        ...styles.dayHeader, 
-                        backgroundColor: isToday ? '#27ae60' : isTomorrow ? '#f39c12' : '#f8f9fa', 
-                        color: isToday || isTomorrow ? '#fff' : '#2c3e50' 
-                    }}>
-                        {day} 
-                        {isToday && <span style={styles.badge}> (Bugün)</span>}
-                        {isTomorrow && <span style={styles.badge}> (Yarın)</span>}
-                    </div>
-                    
-                    <div style={styles.dersList}>
-                        {schedule.filter(s => s.day_of_week === day).map(item => (
-                            <div key={item.id} style={styles.dersCard}>
-                                <div style={styles.dersTime}>{item.start_time.slice(0,5)} - {item.end_time.slice(0,5)}</div>
-                                <div style={styles.dersSubject}>{item.subject_name}</div>
-                                {item.classroom && <div style={styles.dersRoom}>📍 {item.classroom}</div>}
-                                <button onClick={() => deleteDers(item.id)} style={styles.miniDeleteBtn}>Sil</button>
-                            </div>
-                        ))}
-                        {schedule.filter(s => s.day_of_week === day).length === 0 && (
-                            <div style={styles.emptyText}>Ders yok</div>
-                        )}
-                    </div>
-                </div>
-            );
+          return (
+            <div 
+              key={day} 
+              ref={isToday ? todayRef : null} /* تفعيل المرجع هنا لليوم الحالي فقط */
+              style={{ 
+                ...styles.dayCol, 
+                backgroundColor: isToday ? '#fafff9' : isTomorrow ? '#fffcf0' : '#fff',
+                border: isToday ? '2px solid #27ae60' : '1px solid #eee'
+              }}>
+              <div style={{ 
+                ...styles.dayHeader, 
+                backgroundColor: isToday ? '#27ae60' : isTomorrow ? '#f39c12' : '#f8f9fa', 
+                color: isToday || isTomorrow ? '#fff' : '#2c3e50' 
+              }}>
+                {day} 
+                {isToday && <span style={styles.badge}> (Bugün)</span>}
+                {isTomorrow && <span style={styles.badge}> (Yarın)</span>}
+              </div>
+              
+              <div style={styles.dersList}>
+                {schedule.filter(s => s.day_of_week === day).map(item => (
+                  <div key={item.id} style={styles.dersCard}>
+                    <div style={styles.dersTime}>{item.start_time.slice(0,5)} - {item.end_time.slice(0,5)}</div>
+                    <div style={styles.dersSubject}>{item.subject_name}</div>
+                    {item.classroom && <div style={styles.dersRoom}>📍 {item.classroom}</div>}
+                    <button onClick={() => deleteDers(item.id)} style={styles.miniDeleteBtn}>Sil</button>
+                  </div>
+                ))}
+                {schedule.filter(s => s.day_of_week === day).length === 0 && (
+                  <div style={styles.emptyText}>Ders yok</div>
+                )}
+              </div>
+            </div>
+          );
         })}
-    </div>
+      </div>
 
       {/* قسم مؤقت التركيز */}
       <div style={{ ...styles.card, backgroundColor: isBreak ? '#e8f8f5' : '#ebf5fb', textAlign: 'center' }}>
@@ -270,17 +312,17 @@ const styles = {
   inputGroup: { display: 'flex', gap: '10px', marginBottom: '10px' },
   input: { flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '14px' },
   taskCard: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fff', padding: '15px 20px', borderRadius: '10px', boxShadow: '0 2px 5px rgba(0,0,0,0.02)', marginBottom: '10px' },
-  deleteBtn: { background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px', opacity: 0.7 }
-    
-  ,formGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' },
+  deleteBtn: { background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px', opacity: 0.7 },
+  formGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' },
   addDersBtn: { gridColumn: 'span 2', padding: '10px', backgroundColor: '#27ae60', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' },
   
   scheduleGrid: { 
     display: 'flex', 
     gap: '15px', 
-    overflowX: 'auto', // للسماح بالتمرير الجانبي في الشاشات الصغيرة
+    overflowX: 'auto',
     padding: '10px 0',
-    minHeight: '300px'
+    minHeight: '300px',
+    scrollBehavior: 'smooth' // لحركة التمرير الناعمة
   },
   
   dayCol: { 
@@ -299,7 +341,7 @@ const styles = {
     padding: '2px 5px',
     borderRadius: '4px',
     textTransform: 'uppercase'
-},
+  },
   
   dayHeader: { 
     textAlign: 'center', 
@@ -326,8 +368,6 @@ const styles = {
   
   miniDeleteBtn: { fontSize: '10px', color: '#e74c3c', border: 'none', background: 'none', cursor: 'pointer', padding: 0, marginTop: '5px' },
   emptyText: { textAlign: 'center', fontSize: '12px', color: '#bdc3c7', marginTop: '20px' }
-
-  
-  
 };
+
 export default AcademicTracker;

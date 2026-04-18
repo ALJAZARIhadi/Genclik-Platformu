@@ -1,124 +1,177 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 function SportsTracker() {
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
   const userId = localStorage.getItem('userId');
-  
-  // الحصول على تاريخ اليوم بصيغة YYYY-MM-DD
   const today = new Date().toISOString().split('T')[0];
+  const isRTL = i18n.language === 'ar';
+
+  const [exercises, setExercises] = useState({});
+  const [loading, setLoading] = useState(true);
   
-  // قائمة التمارين الأساسية
-  const initialExercises = {
-    walking: { title: "🚶‍♂️ 5000 Adım Yürüyüş", completed: false, calories: 150 },
-    pushups: { title: "🏋️‍♂️ 20 Şınav", completed: false, calories: 50 },
-    situps: { title: "🧘‍♂️ 30 Mekik", completed: false, calories: 40 },
-    water: { title: "💧 2 Litre Su İçmek", completed: false, calories: 0 }
+  // حالات النافذة المنبثقة
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [activeCategory, setActiveCategory] = useState('cardio');
+  const [selectedTemplate, setSelectedTemplate] = useState(null); // التمرين المختار قبل التثبيت
+  const [goalValue, setGoalValue] = useState(''); // القيمة (عدات أو دقائق)
+
+  const exerciseLibrary = {
+    cardio: {
+      label: isRTL ? 'كارديو (دقيقة/خطوة)' : 'Kardiyo (Dk/Adım)', icon: '🏃‍♂️', unit: isRTL ? 'دقيقة/خطوة' : 'Dk/Adım',
+      items: [
+        { id: 'walking', icon: "🚶‍♂️", title: isRTL ? 'مشي' : "Yürüyüş", color: '#27ae60', bgColor: '#e9f7ef' },
+        { id: 'running', icon: "🏃‍♂️", title: isRTL ? 'جري' : "Koşu", color: '#27ae60', bgColor: '#e9f7ef' },
+        { id: 'cycling', icon: "🚴‍♂️", title: isRTL ? 'دراجة' : "Bisiklet", color: '#27ae60', bgColor: '#e9f7ef' }
+      ]
+    },
+    strength: {
+      label: isRTL ? 'قوة (عدات)' : 'Güç (Tekrar)', icon: '🏋️‍♂️', unit: isRTL ? 'عدة' : 'Tekrar',
+      items: [
+        { id: 'pushups', icon: "🏋️‍♂️", title: isRTL ? 'ضغط' : "Şınav", color: '#e67e22', bgColor: '#fdf2e9' },
+        { id: 'situps', icon: "🧗‍♂️", title: isRTL ? 'معدة' : "Mekik", color: '#e67e22', bgColor: '#fdf2e9' },
+        { id: 'dumbbells', icon: "💪", title: isRTL ? 'رفع أثقال' : "Ağırlık", color: '#e67e22', bgColor: '#fdf2e9' }
+      ]
+    }
   };
 
-  const [exercises, setExercises] = useState(initialExercises);
-  const [loading, setLoading] = useState(true);
-
-  // جلب بيانات اليوم من السيرفر
   useEffect(() => {
     if (userId) {
       fetch(`http://localhost:5000/api/auth/get-sports/${userId}/${today}`)
         .then(res => res.json())
         .then(data => {
           if (data && data.length > 0) {
-            const updatedExercises = { ...initialExercises };
+            const loaded = {};
             data.forEach(item => {
-              if (updatedExercises[item.exercise_type]) {
-                updatedExercises[item.exercise_type].completed = item.is_completed === 1;
-              }
+                loaded[item.exercise_type] = { 
+                    title: item.exercise_type, // هنا نحتاج لتطوير السيرفر ليخزن العنوان المخصص
+                    completed: item.is_completed === 1,
+                    icon: "🔥", color: '#34495e', bgColor: '#f1f2f6' 
+                };
             });
-            setExercises(updatedExercises);
+            setExercises(loaded);
           }
-          setLoading(false); // إيقاف التحميل بعد نجاح الجلب
-        })
-        .catch(err => {
-          console.error("خطأ في جلب بيانات الرياضة:", err);
-          setLoading(false); // إيقاف التحميل حتى لو حدث خطأ
-        });
-    } else {
-      // 🚀 السطر السحري: إذا لم يكن هناك مستخدم مسجل، أوقف التحميل فوراً!
-      setLoading(false);
+          setLoading(false);
+        }).catch(() => setLoading(false));
     }
   }, [userId, today]);
 
-  // دالة تغيير حالة التمرين وإرسالها للسيرفر
   const toggleExercise = (type) => {
     const isNowCompleted = !exercises[type].completed;
+    setExercises(prev => ({ ...prev, [type]: { ...prev[type], completed: isNowCompleted } }));
     
-    // تحديث الواجهة فوراً
-    const newExercises = { ...exercises, [type]: { ...exercises[type], completed: isNowCompleted } };
-    setExercises(newExercises);
-
-    // إرسال التحديث للسيرفر
     fetch('http://localhost:5000/api/auth/save-sports', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        userId, 
-        date: today, 
-        exercises: [{ type: type, completed: isNowCompleted }] 
-      })
-    })
-    .catch(err => console.error("خطأ في الحفظ:", err));
+      body: JSON.stringify({ userId, date: today, exercises: [{ type, completed: isNowCompleted }] })
+    });
   };
 
-  // حساب الإحصائيات
-  const totalCompleted = Object.values(exercises).filter(ex => ex.completed).length;
-  const totalExercises = Object.keys(exercises).length;
-  const burnedCalories = Object.values(exercises).reduce((total, ex) => ex.completed ? total + ex.calories : total, 0);
-  const progressPercent = (totalCompleted / totalExercises) * 100;
+  const handleAddClick = (template) => {
+    setSelectedTemplate(template);
+    setGoalValue(''); // تصفير القيمة عند اختيار تمرين جديد
+  };
 
-  if (loading) return <div style={{textAlign: 'center', marginTop: '50px'}}>Yükleniyor...</div>;
+  const confirmAddition = () => {
+    if (!goalValue) return alert(isRTL ? 'يرجى إدخال العدد!' : 'Lütfen hedef girin!');
+    
+    const unit = exerciseLibrary[activeCategory].unit;
+    const finalTitle = `${goalValue} ${unit} ${selectedTemplate.title}`;
+    
+    setExercises(prev => ({
+      ...prev,
+      [selectedTemplate.id]: { ...selectedTemplate, title: finalTitle, completed: false }
+    }));
+    
+    setIsModalOpen(false);
+    setSelectedTemplate(null);
+  };
+
+  const progressPercent = Object.keys(exercises).length > 0 
+    ? (Object.values(exercises).filter(ex => ex.completed).length / Object.keys(exercises).length) * 100 
+    : 0;
 
   return (
-    <div style={styles.container}>
-      <div style={styles.header}>
-        <button onClick={() => navigate('/menu')} style={styles.backBtn}>⬅ Geri Dön</button>
-        <h2 style={{ margin: 0, color: '#2c3e50' }}>🏃‍♂️ Günlük Spor Takibi</h2>
-      </div>
-
-      <div style={styles.dateBanner}>
-        📅 <b>Bugünün Tarihi:</b> {new Date().toLocaleDateString('tr-TR')}
-      </div>
-
-      <div style={styles.statsCard}>
-        <div style={styles.statBox}>
-          <div style={styles.statNumber}>{totalCompleted}/{totalExercises}</div>
-          <div style={styles.statLabel}>Tamamlanan</div>
-        </div>
-        <div style={styles.statBox}>
-          <div style={styles.statNumber}>🔥 {burnedCalories}</div>
-          <div style={styles.statLabel}>Yakılan Kalori</div>
-        </div>
-        <div style={styles.statBox}>
-          <div style={styles.statNumber}>%{Math.round(progressPercent)}</div>
-          <div style={styles.statLabel}>Günlük Hedef</div>
-        </div>
-      </div>
-
-      <div style={styles.progressBarBg}>
-        <div style={{...styles.progressBarFill, width: `${progressPercent}%`}}></div>
-      </div>
-
-      <h3 style={styles.subtitle}>🎯 Bugünkü Görevlerin:</h3>
+    <div style={{...styles.container, direction: isRTL ? 'rtl' : 'ltr'}}>
       
-      <div style={styles.list}>
+      {/* Modal النافذة المنبثقة */}
+      {isModalOpen && (
+        <div style={styles.modalOverlay}>
+          <div style={styles.modalContent}>
+            <h3 style={{marginTop: 0}}>{isRTL ? 'تخصيص التمرين' : 'Görevi Özelleştir'}</h3>
+            
+            {!selectedTemplate ? (
+              <>
+                <div style={styles.categoryTabs}>
+                  {Object.keys(exerciseLibrary).map(cat => (
+                    <button key={cat} onClick={() => setActiveCategory(cat)} style={{...styles.tabBtn, backgroundColor: activeCategory === cat ? '#2c3e50' : '#eee', color: activeCategory === cat ? '#fff' : '#333'}}>
+                      {exerciseLibrary[cat].label}
+                    </button>
+                  ))}
+                </div>
+                <div style={styles.libraryGrid}>
+                  {exerciseLibrary[activeCategory].items.map(item => (
+                    <div key={item.id} style={styles.libraryCard} onClick={() => handleAddClick(item)}>
+                      <div style={{fontSize: '24px'}}>{item.icon}</div>
+                      <b>{item.title}</b>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div style={styles.setupContainer}>
+                <p>{isRTL ? 'أدخل الهدف لـ' : 'Hedef girin:'} <b>{selectedTemplate.title}</b></p>
+                <input 
+                  type="number" 
+                  placeholder={exerciseLibrary[activeCategory].unit}
+                  value={goalValue}
+                  onChange={(e) => setGoalValue(e.target.value)}
+                  style={styles.input}
+                  autoFocus
+                />
+                <div style={{display: 'flex', gap: '10px', marginTop: '15px'}}>
+                  <button onClick={confirmAddition} style={styles.confirmBtn}>{isRTL ? 'إضافة' : 'Ekle'}</button>
+                  <button onClick={() => setSelectedTemplate(null)} style={styles.cancelBtn}>{isRTL ? 'إلغاء' : 'Vazgeç'}</button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* واجهة العرض الرئيسية */}
+      <div style={styles.header}>
+        <button onClick={() => navigate('/menu')} style={styles.backBtn}>{isRTL ? '⬅ عودة' : '⬅ Geri'}</button>
+        <h2 style={{margin: 0}}>🏃‍♂️ {isRTL ? 'تمارين اليوم' : 'Günlük Spor'}</h2>
+      </div>
+
+      <div style={styles.dashboardCard}>
+        <div style={{display: 'flex', justifyContent: 'space-between'}}>
+            <span>{isRTL ? 'نسبة الإنجاز' : 'Tamamlama'}</span>
+            <span>{Math.round(progressPercent)}%</span>
+        </div>
+        <div style={styles.progressBarBg}>
+          <div style={{...styles.progressBarFill, width: `${progressPercent}%`}}></div>
+        </div>
+      </div>
+
+      <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '20px'}}>
+        <button onClick={() => setIsModalOpen(true)} style={styles.addBtn}>{isRTL ? '➕ إضافة تمرين مخصص' : '➕ Yeni Egzersiz'}</button>
+      </div>
+
+      <div style={styles.grid}>
         {Object.keys(exercises).map(type => (
-          <div 
-            key={type} 
-            style={{...styles.taskCard, borderColor: exercises[type].completed ? '#2ecc71' : '#eee', backgroundColor: exercises[type].completed ? '#f0fdf4' : '#fff'}}
-            onClick={() => toggleExercise(type)}
-          >
-            <div style={{ fontSize: '18px', fontWeight: 'bold', color: exercises[type].completed ? '#27ae60' : '#2c3e50', textDecoration: exercises[type].completed ? 'line-through' : 'none' }}>
-              {exercises[type].title}
+          <div key={type} onClick={() => toggleExercise(type)} style={{...styles.taskCard, borderColor: exercises[type].completed ? '#2ecc71' : '#eee'}}>
+            <div style={{display: 'flex', alignItems: 'center', gap: '15px'}}>
+              <div style={styles.iconWrapper}>{exercises[type].icon}</div>
+              <span style={{fontWeight: 'bold', textDecoration: exercises[type].completed ? 'line-through' : 'none'}}>
+                {exercises[type].title}
+              </span>
             </div>
-            <div style={styles.checkbox}>
-              {exercises[type].completed ? '✅' : '⬜'}
+            <div style={{...styles.checkbox, backgroundColor: exercises[type].completed ? '#2ecc71' : '#fff'}}>
+              {exercises[type].completed && '✔'}
             </div>
           </div>
         ))}
@@ -128,20 +181,29 @@ function SportsTracker() {
 }
 
 const styles = {
-  container: { padding: '20px', maxWidth: '600px', margin: 'auto', fontFamily: '"Segoe UI", Tahoma, Geneva, Verdana, sans-serif' },
-  header: { display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '20px' },
-  backBtn: { padding: '8px 15px', borderRadius: '8px', border: 'none', cursor: 'pointer', backgroundColor: '#ecf0f1', fontWeight: 'bold' },
-  dateBanner: { backgroundColor: '#3498db', color: '#fff', padding: '15px', borderRadius: '10px', textAlign: 'center', marginBottom: '20px', fontSize: '16px', boxShadow: '0 4px 6px rgba(52, 152, 219, 0.2)' },
-  statsCard: { display: 'flex', justifyContent: 'space-between', backgroundColor: '#fff', padding: '20px', borderRadius: '15px', boxShadow: '0 4px 10px rgba(0,0,0,0.05)', marginBottom: '15px' },
-  statBox: { textAlign: 'center', flex: 1 },
-  statNumber: { fontSize: '24px', fontWeight: 'bold', color: '#e67e22', marginBottom: '5px' },
-  statLabel: { color: '#7f8c8d', fontSize: '13px' },
-  progressBarBg: { height: '10px', backgroundColor: '#ecf0f1', borderRadius: '5px', overflow: 'hidden', marginBottom: '30px' },
-  progressBarFill: { height: '100%', backgroundColor: '#2ecc71', transition: 'width 0.5s ease' },
-  subtitle: { color: '#34495e', marginBottom: '15px' },
-  list: { display: 'flex', flexDirection: 'column', gap: '15px' },
-  taskCard: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px', borderRadius: '12px', border: '2px solid', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 2px 5px rgba(0,0,0,0.02)' },
-  checkbox: { fontSize: '24px' }
+  container: { padding: '20px', maxWidth: '500px', margin: 'auto', fontFamily: 'sans-serif' },
+  header: { display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '20px' },
+  backBtn: { padding: '8px 12px', borderRadius: '8px', border: 'none', cursor: 'pointer' },
+  dashboardCard: { backgroundColor: '#2c3e50', padding: '20px', borderRadius: '15px', color: '#fff', marginBottom: '20px' },
+  progressBarBg: { height: '8px', backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: '4px', marginTop: '10px' },
+  progressBarFill: { height: '100%', backgroundColor: '#2ecc71', borderRadius: '4px', transition: '0.5s' },
+  addBtn: { width: '100%', padding: '12px', backgroundColor: '#3498db', color: '#fff', border: 'none', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer' },
+  grid: { display: 'flex', flexDirection: 'column', gap: '12px' },
+  taskCard: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '15px', backgroundColor: '#fff', borderRadius: '12px', border: '2px solid', cursor: 'pointer' },
+  iconWrapper: { fontSize: '20px' },
+  checkbox: { width: '24px', height: '24px', border: '2px solid #ddd', borderRadius: '6px', display: 'flex', justifyContent: 'center', alignItems: 'center', color: '#fff' },
+  
+  // Modal Styles
+  modalOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 },
+  modalContent: { backgroundColor: '#fff', padding: '25px', borderRadius: '20px', width: '90%', maxWidth: '400px' },
+  categoryTabs: { display: 'flex', gap: '10px', marginBottom: '15px' },
+  tabBtn: { flex: 1, padding: '8px', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' },
+  libraryGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' },
+  libraryCard: { padding: '15px', border: '1px solid #eee', borderRadius: '12px', textAlign: 'center', cursor: 'pointer' },
+  setupContainer: { textAlign: 'center' },
+  input: { width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '18px', textAlign: 'center' },
+  confirmBtn: { flex: 2, padding: '10px', backgroundColor: '#2ecc71', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' },
+  cancelBtn: { flex: 1, padding: '10px', backgroundColor: '#e74c3c', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }
 };
 
 export default SportsTracker;

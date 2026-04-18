@@ -29,7 +29,7 @@ function App() {
             <Route path="/quran-tracker" element={<QuranTracker />} /> 
             <Route path="/sports-tracker" element={<SportsTracker />} />
             <Route path="/scholars" element={<Scholars />} />
-            <Route path="/scholar/:id" element={<ScholarDetails />} />
+            <Route path="/scholar-details" element={<ScholarDetails />} />
             <Route path="/academic-tracker" element={<AcademicTracker />} />
             
             {/* 3. صائد الأخطاء: إذا كان الرابط غير موجود ستظهر هذه الرسالة بدلاً من الفراغ */}

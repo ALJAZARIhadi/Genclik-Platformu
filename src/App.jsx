@@ -3,23 +3,23 @@ import Login from './pages/Login';
 import MainMenu from './pages/MainMenu'; 
 import Register from './pages/Register'; 
 import QuranTracker from './pages/QuranTracker'; 
-import SportsTracker from './Frontend/SportsTracker'; // تأكد أن هذا المسار صحيح في مجلداتك
+import SportsTracker from './Frontend/SportsTracker'; 
 import ScholarDetails from './pages/ScholarDetails'; 
 import Scholars from './pages/Scholars'; 
 import AcademicTracker from './pages/AcademicTracker';
 import Navbar from './pages/Navbar';
 import Footer from './pages/Footer';
 import Profile from './pages/Profile';
-import LanguageSwitcher from './components/LanguageSwitcher';
+// قمنا بإزالة استيراد LanguageSwitcher من هنا
+
 function App() {
   return (
     <Router>
-      {/* 1. حاوية رئيسية تغطي كامل الشاشة */}
       <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-        <LanguageSwitcher />
+        
+        {/* شريط الملاحة الشامل الجديد */}
         <Navbar />
         
-        {/* 2. حاوية المحتوى (flex: 1 تجعلها تتمدد وتدفع الفوتر للأسفل) */}
         <div style={{ flex: 1, padding: '20px' }}>
           <Routes>
             <Route path="/profile" element={<Profile />} />
@@ -32,7 +32,6 @@ function App() {
             <Route path="/scholar-details" element={<ScholarDetails />} />
             <Route path="/academic-tracker" element={<AcademicTracker />} />
             
-            {/* 3. صائد الأخطاء: إذا كان الرابط غير موجود ستظهر هذه الرسالة بدلاً من الفراغ */}
             <Route path="*" element={
               <div style={{ textAlign: 'center', marginTop: '50px' }}>
                 <h2 style={{ color: 'var(--text-main)' }}>🚫 عذراً، الصفحة غير موجودة!</h2>

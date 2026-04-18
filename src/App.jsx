@@ -10,6 +10,7 @@ import AcademicTracker from './pages/AcademicTracker';
 import Navbar from './pages/Navbar';
 import Footer from './pages/Footer';
 import Profile from './pages/Profile';
+import AdminAddScholar from './components/AdminAddScholar';
 // قمنا بإزالة استيراد LanguageSwitcher من هنا
 
 function App() {
@@ -31,6 +32,7 @@ function App() {
             <Route path="/scholars" element={<Scholars />} />
             <Route path="/scholar-details" element={<ScholarDetails />} />
             <Route path="/academic-tracker" element={<AcademicTracker />} />
+            <Route path="/AdminAddScholar" element={<AdminAddScholar/>}></Route>
             
             <Route path="*" element={
               <div style={{ textAlign: 'center', marginTop: '50px' }}>

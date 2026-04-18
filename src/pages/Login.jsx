@@ -9,7 +9,7 @@ function Login() {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    setErrorMsg(''); // مسح الأخطاء السابقة عند كل محاولة
+    setErrorMsg(''); 
     
     try {
       const response = await fetch('http://localhost:5000/api/auth/login', {
@@ -21,12 +21,17 @@ function Login() {
       const data = await response.json();
 
       if (response.ok) {
-        localStorage.setItem('userRole', data.role);
-        localStorage.setItem('userName', data.user);
-        localStorage.setItem('userId', data.userId);
-        navigate('/menu'); // الانتقال إلى لوحة التحكم بعد تسجيل الدخول الناجح
+        // 🔥 التعديل السحري هنا 🔥
+        // نأخذ البيانات من داخل كائن data.user 
+        const actualUserId = data.user ? data.user.id : data.userId;
+        const actualUserName = data.user ? (data.user.full_name || data.user.name) : '';
+
+        localStorage.setItem('userRole', data.role || (data.user && data.user.role));
+        localStorage.setItem('userName', actualUserName);
+        localStorage.setItem('userId', actualUserId);
+        
+        navigate('/menu'); 
       } else {
-        // إذا كان هناك خطأ (مثل كلمة مرور خاطئة)، نظهره في الشاشة
         setErrorMsg(data.message || 'Giriş başarısız!');
       }
     } catch (error) {

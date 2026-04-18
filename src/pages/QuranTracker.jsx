@@ -11,15 +11,20 @@ function QuranTracker() {
 
   // --- 1. جلب البيانات عند فتح الصفحة ---
   useEffect(() => {
-    if (userId) {
+    if (userId && userId !== "undefined") {
       fetch(`http://localhost:5000/api/auth/get-quran/${userId}`)
         .then(res => res.json())
         .then(data => {
           const savedData = {};
-          data.forEach(item => {
-            savedData[item.item_number] = item.status;
-          });
-          setPageStatuses(savedData);
+          if (Array.isArray(data)) {
+              data.forEach(item => {
+                const pageNum = item.page_number || item.item_number; 
+                if (pageNum) {
+                    savedData[pageNum] = item.status;
+                }
+              });
+              setPageStatuses(savedData);
+          }
         })
         .catch(err => console.error("❌ خطأ في الجلب:", err));
     }
@@ -27,10 +32,14 @@ function QuranTracker() {
 
   // --- 2. دالة الإرسال للسيرفر ---
   const syncWithServer = (itemsArray) => {
+    if (!userId || userId === "undefined") {
+        alert("الرجاء تسجيل الدخول أولاً!");
+        return;
+    }
     fetch('http://localhost:5000/api/auth/save-quran', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId, items: itemsArray })
+      body: JSON.stringify({ userId: userId, items: itemsArray })
     })
     .catch(err => console.error("❌ خطأ في الإرسال:", err));
   };
@@ -64,12 +73,15 @@ function QuranTracker() {
     syncWithServer(itemsToSync);
   };
 
-  // === حسابات الإحصائيات العامة ===
+  // === حسابات الإحصائيات العامة للدونات ===
   const totalPages = 600; 
   const memorizedCount = Object.values(pageStatuses).filter(s => s === 'memorized').length;
   const reviewCount = Object.values(pageStatuses).filter(s => s === 'review').length;
+  const totalProgressCount = memorizedCount + reviewCount;
+  
   const memPercent = (memorizedCount / totalPages) * 100;
   const revPercent = (reviewCount / totalPages) * 100;
+  const totalPercent = (totalProgressCount / totalPages) * 100;
 
   return (
     <div style={styles.container}>
@@ -84,8 +96,8 @@ function QuranTracker() {
           background: `conic-gradient(#2ecc71 0% ${memPercent}%, #f39c12 ${memPercent}% ${memPercent + revPercent}%, #e0e0e0 ${memPercent + revPercent}% 100%)`
         }}>
           <div style={styles.donutInner}>
-            <h2 style={{ margin: 0, color: '#2ecc71' }}>%{Math.round(memPercent)}</h2>
-            <small style={{ color: '#7f8c8d' }}>Hafızlık</small>
+            <h2 style={{ margin: 0, color: '#2c3e50' }}>%{Math.round(totalPercent)}</h2>
+            <small style={{ color: '#7f8c8d' }}>Toplam</small>
           </div>
         </div>
         <div style={styles.legend}>
@@ -94,51 +106,49 @@ function QuranTracker() {
         </div>
       </div>
 
-      {/* قائمة الأجزاء مع شريط التقدم المصغر */}
       <div style={styles.juzGrid}>
         {Array.from({ length: 30 }, (_, i) => i + 1).map(juzNum => {
           
-          // --- حسابات خاصة بكل جزء للشريط المصغر ---
+          // --- حسابات خاصة بكل جزء للحفظ والمراجعة ---
           const startPage = (juzNum - 1) * 20 + 1;
           const endPage = juzNum * 20;
-          let memCountInJuz = 0;
+          let memInJuz = 0;
+          let revInJuz = 0;
           
           for (let p = startPage; p <= endPage; p++) {
-            if (pageStatuses[p] === 'memorized') memCountInJuz++;
+            if (pageStatuses[p] === 'memorized') memInJuz++;
+            else if (pageStatuses[p] === 'review') revInJuz++;
           }
           
-          const progressPercent = (memCountInJuz / 20) * 100;
-          const isCompleted = progressPercent === 100;
-          const inProgress = progressPercent > 0 && progressPercent < 100;
+          const memPct = (memInJuz / 20) * 100;
+          const revPct = (revInJuz / 20) * 100;
+          const isFull = (memInJuz + revInJuz) === 20;
 
           return (
             <div key={juzNum} style={{
               ...styles.juzWrapper, 
-              borderColor: isCompleted ? '#2ecc71' : (inProgress ? '#3498db' : '#eee'),
-              backgroundColor: isCompleted ? '#f9fffb' : '#fff'
+              borderColor: isFull ? '#2ecc71' : ((memInJuz + revInJuz) > 0 ? '#3498db' : '#eee'),
             }}>
               
-              {/* رأس الجزء (يظهر دائماً) */}
               <div style={styles.juzHeader} onClick={() => setExpandedJuz(expandedJuz === juzNum ? null : juzNum)}>
                 <div style={styles.juzHeaderTop}>
-                  <b style={{ color: isCompleted ? '#27ae60' : '#2c3e50', fontSize: '16px' }}>{juzNum}. Cüz</b>
+                  <b style={{ color: '#2c3e50', fontSize: '16px' }}>{juzNum}. Cüz</b>
                   <span>{expandedJuz === juzNum ? '🔼' : '🔽'}</span>
                 </div>
                 
-                {/* شريط التقدم المصغر */}
+                {/* شريط التقدم المطور: يعرض اللونين معاً */}
                 <div style={styles.miniProgressBg}>
-                  <div style={{
-                    ...styles.miniProgressFill, 
-                    width: `${progressPercent}%`,
-                    backgroundColor: isCompleted ? '#2ecc71' : '#3498db'
-                  }}></div>
+                  <div style={{ ...styles.miniProgressFill, width: `${memPct}%`, backgroundColor: '#2ecc71' }}></div>
+                  <div style={{ ...styles.miniProgressFill, width: `${revPct}%`, backgroundColor: '#f39c12' }}></div>
                 </div>
+
                 <div style={styles.miniProgressText}>
-                  {isCompleted ? '✅ Tamamlandı' : `${memCountInJuz}/20 Sayfa`}
+                  <span style={{color: '#27ae60'}}>{memInJuz}✔</span> 
+                  <span style={{margin: '0 5px', color: '#ccc'}}>|</span>
+                  <span style={{color: '#e67e22'}}>{revInJuz}🔄</span>
                 </div>
               </div>
 
-              {/* محتوى الجزء (يظهر عند النقر) */}
               {expandedJuz === juzNum && (
                 <div style={styles.juzContent}>
                   <div style={styles.actionRow}>
@@ -149,7 +159,11 @@ function QuranTracker() {
                     {Array.from({ length: 20 }, (_, i) => (juzNum - 1) * 20 + i + 1).map(pageNum => {
                       const status = pageStatuses[pageNum] || 'none';
                       return (
-                        <div key={pageNum} onClick={() => togglePageStatus(pageNum)} style={{ ...styles.pageBox, backgroundColor: status === 'memorized' ? '#2ecc71' : status === 'review' ? '#f39c12' : '#eee', color: status === 'none' ? '#333' : '#fff' }}>
+                        <div key={pageNum} onClick={() => togglePageStatus(pageNum)} style={{ 
+                            ...styles.pageBox, 
+                            backgroundColor: status === 'memorized' ? '#2ecc71' : status === 'review' ? '#f39c12' : '#eee', 
+                            color: status === 'none' ? '#333' : '#fff' 
+                        }}>
                           {pageNum}
                         </div>
                       );
@@ -173,19 +187,16 @@ const styles = {
   donut: { width: '120px', height: '120px', borderRadius: '50%', display: 'flex', justifyContent: 'center', alignItems: 'center' },
   donutInner: { width: '85px', height: '85px', borderRadius: '50%', backgroundColor: '#fff', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' },
   legend: { display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '15px' },
-  
-  // تصميم الشبكة للأجزاء
   juzGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '15px' },
   juzWrapper: { borderRadius: '12px', border: '2px solid', transition: 'all 0.3s ease', overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' },
-  
-  // تصميم رأس الجزء والشريط المصغر
   juzHeader: { padding: '15px', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: '8px' },
   juzHeaderTop: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
-  miniProgressBg: { height: '6px', backgroundColor: '#ecf0f1', borderRadius: '3px', overflow: 'hidden', width: '100%' },
+  
+  // شريط التقدم الصغير أصبح Flex ليحتوي على اللونين
+  miniProgressBg: { height: '8px', backgroundColor: '#ecf0f1', borderRadius: '4px', overflow: 'hidden', width: '100%', display: 'flex' },
   miniProgressFill: { height: '100%', transition: 'width 0.5s ease' },
-  miniProgressText: { fontSize: '12px', color: '#7f8c8d', textAlign: 'right', fontWeight: 'bold' },
-
-  // تصميم المحتوى الداخلي للصفحات
+  
+  miniProgressText: { fontSize: '12px', textAlign: 'right', fontWeight: 'bold' },
   juzContent: { padding: '15px', borderTop: '1px solid #eee', backgroundColor: '#fafafa' },
   actionRow: { display: 'flex', gap: '10px', marginBottom: '15px' },
   actionGreen: { flex: 1, padding: '8px', backgroundColor: '#e8f8f5', color: '#16a085', border: '1px solid #1abc9c', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' },
